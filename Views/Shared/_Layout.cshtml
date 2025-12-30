@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Terapia Física</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                🏥 Terapia Física
+            </a>
+            <ul class="navbar-nav">
+                <li><a class="nav-link" asp-controller="Home" asp-action="Index">Inicio</a></li>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <li><a class="nav-link" asp-controller="Appointments" asp-action="Index">Mis Citas</a></li>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <li><a class="nav-link" asp-controller="Admin" asp-action="Dashboard">Admin</a></li>
+                    }
+                    <li>
+                        <form method="post" asp-controller="Account" asp-action="Logout" style="display: inline;">
+                            <button type="submit" class="btn btn-outline">Cerrar Sesión</button>
+                        </form>
+                    </li>
+                }
+                else
+                {
+                    <li><a class="nav-link" asp-controller="Account" asp-action="Login">Iniciar Sesión</a></li>
+                    <li><a class="btn btn-primary" asp-controller="Account" asp-action="Register">Registrarse</a></li>
+                }
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        @if (TempData["Success"] != null)
+        {
+            <div class="container">
+                <div class="alert alert-success">
+                    @TempData["Success"]
+                </div>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="container">
+                <div class="alert alert-error">
+                    @TempData["Error"]
+                </div>
+            </div>
+        }
+        @if (TempData["Info"] != null)
+        {
+            <div class="container">
+                <div class="alert alert-info">
+                    @TempData["Info"]
+                </div>
+            </div>
+        }
+        
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 - Terapia Física - Todos los derechos reservados</p>
+    </footer>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

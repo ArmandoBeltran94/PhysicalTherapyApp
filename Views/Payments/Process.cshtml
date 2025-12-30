@@ -1,0 +1,65 @@
+@model PhysicalTherapyApp.ViewModels.ProcessPaymentViewModel
+@{
+    ViewData["Title"] = "Procesar Pago";
+}
+
+<div class="container">
+    <div class="card fade-in" style="max-width: 600px; margin: 2rem auto;">
+        <div class="card-header">
+            Procesar Pago
+        </div>
+        <div class="card-body">
+            <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: var(--border-radius-sm); margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1rem; color: var(--primary-color);">Detalles de la Cita</h3>
+                <p><strong>Servicio:</strong> @Model.ServiceName</p>
+                <p><strong>Terapeuta:</strong> @Model.TherapistName</p>
+                <p><strong>Fecha:</strong> @Model.AppointmentDate.ToString("dd/MM/yyyy HH:mm")</p>
+                <p style="font-size: 1.5rem; font-weight: 700; color: var(--secondary-color); margin-top: 1rem;">
+                    Total: $@Model.Amount.ToString("F2")
+                </p>
+            </div>
+
+            <form method="post" asp-action="Process">
+                <input type="hidden" asp-for="AppointmentId" />
+                <input type="hidden" asp-for="Amount" />
+                <input type="hidden" asp-for="ServiceName" />
+                <input type="hidden" asp-for="TherapistName" />
+                <input type="hidden" asp-for="AppointmentDate" />
+                
+                <div asp-validation-summary="All" class="text-danger"></div>
+                
+                <div class="form-group">
+                    <label asp-for="PaymentMethod" class="form-label"></label>
+                    <select asp-for="PaymentMethod" class="form-control">
+                        <option value="">-- Seleccione método de pago --</option>
+                        <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+                        <option value="Tarjeta de Débito">Tarjeta de Débito</option>
+                        <option value="PayPal">PayPal</option>
+                        <option value="Transferencia">Transferencia Bancaria</option>
+                    </select>
+                    <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+                </div>
+
+                <div style="background: #dbeafe; padding: 1rem; border-radius: var(--border-radius-sm); margin: 1.5rem 0;">
+                    <p style="margin: 0; font-size: 0.875rem; color: #1e40af;">
+                        <strong>Nota:</strong> Este es un sistema de pagos simulado para demostración. 
+                        En producción, se integraría con un proveedor de pagos real como Stripe o PayPal.
+                    </p>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        Procesar Pago
+                    </button>
+                    <a asp-controller="Appointments" asp-action="Index" class="btn btn-outline" style="flex: 1;">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

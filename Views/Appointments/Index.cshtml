@@ -1,0 +1,113 @@
+@model IEnumerable<PhysicalTherapyApp.Models.Appointment>
+@{
+    ViewData["Title"] = "Mis Citas";
+}
+
+<div class="container">
+    <div class="card fade-in">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Mis Citas</span>
+            @if (!User.IsInRole("Admin") && !User.IsInRole("Therapist"))
+            {
+                <a asp-action="Create" class="btn btn-primary">+ Nueva Cita</a>
+            }
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Fecha y Hora</th>
+                            <th>Servicio</th>
+                            @if (User.IsInRole("Admin") || User.IsInRole("Therapist"))
+                            {
+                                <th>Paciente</th>
+                            }
+                            @if (User.IsInRole("Admin") || !User.IsInRole("Therapist"))
+                            {
+                                <th>Terapeuta</th>
+                            }
+                            <th>Estado</th>
+                            <th>Pago</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var appointment in Model)
+                        {
+                            <tr>
+                                <td>@appointment.AppointmentDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@appointment.Service.Name</td>
+                                @if (User.IsInRole("Admin") || User.IsInRole("Therapist"))
+                                {
+                                    <td>@appointment.Patient.User.FullName</td>
+                                }
+                                @if (User.IsInRole("Admin") || !User.IsInRole("Therapist"))
+                                {
+                                    <td>@appointment.Therapist.User.FullName</td>
+                                }
+                                <td>
+                                    @if (appointment.Status == PhysicalTherapyApp.Models.AppointmentStatus.Pending)
+                                    {
+                                        <span class="badge badge-pending">Pendiente</span>
+                                    }
+                                    else if (appointment.Status == PhysicalTherapyApp.Models.AppointmentStatus.Confirmed)
+                                    {
+                                        <span class="badge badge-confirmed">Confirmada</span>
+                                    }
+                                    else if (appointment.Status == PhysicalTherapyApp.Models.AppointmentStatus.Completed)
+                                    {
+                                        <span class="badge badge-completed">Completada</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-cancelled">Cancelada</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (appointment.Payment != null && appointment.Payment.Status == PhysicalTherapyApp.Models.PaymentStatus.Completed)
+                                    {
+                                        <span class="badge badge-completed">Pagado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-pending">Pendiente</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (appointment.Status != PhysicalTherapyApp.Models.AppointmentStatus.Cancelled && 
+                                         appointment.Status != PhysicalTherapyApp.Models.AppointmentStatus.Completed)
+                                    {
+                                        @if (appointment.Payment == null || appointment.Payment.Status != PhysicalTherapyApp.Models.PaymentStatus.Completed)
+                                        {
+                                            <a asp-controller="Payments" asp-action="Process" asp-route-appointmentId="@appointment.Id" 
+                                               class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem; margin-right: 0.5rem;">
+                                                Pagar
+                                            </a>
+                                        }
+                                        <form method="post" asp-action="Cancel" asp-route-id="@appointment.Id" style="display: inline;">
+                                            <button type="submit" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                                Cancelar
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="text-align: center; padding: 3rem;">
+                    <p style="font-size: 1.25rem; color: var(--text-secondary);">No tienes citas programadas</p>
+                    @if (!User.IsInRole("Admin") && !User.IsInRole("Therapist"))
+                    {
+                        <a asp-action="Create" class="btn btn-primary" style="margin-top: 1rem;">Agendar Primera Cita</a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

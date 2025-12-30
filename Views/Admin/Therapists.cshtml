@@ -1,0 +1,61 @@
+@model IEnumerable<PhysicalTherapyApp.Models.Therapist>
+@{
+    ViewData["Title"] = "Gestión de Terapeutas";
+}
+
+<div class="container">
+    <div class="card fade-in">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Terapeutas</span>
+            <a asp-action="CreateTherapist" class="btn btn-primary">+ Nuevo Terapeuta</a>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Especialización</th>
+                        <th>Experiencia</th>
+                        <th>Licencia</th>
+                        <th>Disponibilidad</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var therapist in Model)
+                    {
+                        <tr>
+                            <td><strong>@therapist.User.FullName</strong></td>
+                            <td>@therapist.User.Email</td>
+                            <td>@therapist.Specialization</td>
+                            <td>@therapist.YearsOfExperience años</td>
+                            <td>@therapist.LicenseNumber</td>
+                            <td>
+                                @if (therapist.IsAvailable)
+                                {
+                                    <span class="badge badge-completed">Disponible</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-cancelled">No Disponible</span>
+                                }
+                            </td>
+                            <td>
+                                <form method="post" asp-action="ToggleTherapistAvailability" asp-route-id="@therapist.Id" style="display: inline;">
+                                    <button type="submit" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                        @(therapist.IsAvailable ? "Desactivar" : "Activar")
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div style="margin-top: 1rem;">
+        <a asp-action="Dashboard" class="btn btn-outline">← Volver al Panel</a>
+    </div>
+</div>

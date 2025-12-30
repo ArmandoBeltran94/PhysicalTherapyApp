@@ -1,0 +1,57 @@
+@model IEnumerable<PhysicalTherapyApp.Models.Service>
+@{
+    ViewData["Title"] = "Gestión de Servicios";
+}
+
+<div class="container">
+    <div class="card fade-in">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Servicios</span>
+            <a asp-action="CreateService" class="btn btn-primary">+ Nuevo Servicio</a>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Precio</th>
+                        <th>Duración</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var service in Model)
+                    {
+                        <tr>
+                            <td><strong>@service.Name</strong></td>
+                            <td>@service.Description</td>
+                            <td style="color: var(--secondary-color); font-weight: 600;">$@service.Price.ToString("F2")</td>
+                            <td>@service.DurationMinutes min</td>
+                            <td>
+                                @if (service.IsActive)
+                                {
+                                    <span class="badge badge-completed">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-cancelled">Inactivo</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="EditService" asp-route-id="@service.Id" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                    Editar
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div style="margin-top: 1rem;">
+        <a asp-action="Dashboard" class="btn btn-outline">← Volver al Panel</a>
+    </div>
+</div>

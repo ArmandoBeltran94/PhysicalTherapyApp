@@ -1,0 +1,102 @@
+@model PhysicalTherapyApp.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Panel de Administración";
+}
+
+<div class="container">
+    <div class="card fade-in">
+        <div class="card-header">
+            🎛️ Panel de Administración
+        </div>
+        <div class="card-body">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">@Model.TotalPatients</div>
+                    <div class="stat-label">Pacientes Totales</div>
+                </div>
+                <div class="stat-card secondary">
+                    <div class="stat-value">@Model.TotalTherapists</div>
+                    <div class="stat-label">Terapeutas</div>
+                </div>
+                <div class="stat-card accent">
+                    <div class="stat-value">@Model.TotalAppointments</div>
+                    <div class="stat-label">Citas Totales</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-value">@Model.PendingAppointments</div>
+                    <div class="stat-label">Citas Pendientes</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <div class="stat-value">$@Model.TotalRevenue.ToString("F2")</div>
+                    <div class="stat-label">Ingresos Totales</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 2rem;">
+                <a asp-action="Services" class="btn btn-primary" style="padding: 1.5rem;">
+                    📋 Gestionar Servicios
+                </a>
+                <a asp-action="Therapists" class="btn btn-secondary" style="padding: 1.5rem;">
+                    👨‍⚕️ Gestionar Terapeutas
+                </a>
+                <a asp-controller="Appointments" asp-action="Index" class="btn btn-outline" style="padding: 1.5rem;">
+                    📅 Ver Todas las Citas
+                </a>
+                <a asp-controller="Payments" asp-action="Index" class="btn btn-outline" style="padding: 1.5rem;">
+                    💳 Ver Pagos
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.RecentAppointments.Any())
+    {
+        <div class="card fade-in">
+            <div class="card-header">
+                Citas Recientes
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Paciente</th>
+                            <th>Terapeuta</th>
+                            <th>Servicio</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var appointment in Model.RecentAppointments.Take(10))
+                        {
+                            <tr>
+                                <td>@appointment.AppointmentDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@appointment.Patient.User.FullName</td>
+                                <td>@appointment.Therapist.User.FullName</td>
+                                <td>@appointment.Service.Name</td>
+                                <td>
+                                    @if (appointment.Status == PhysicalTherapyApp.Models.AppointmentStatus.Pending)
+                                    {
+                                        <span class="badge badge-pending">Pendiente</span>
+                                    }
+                                    else if (appointment.Status == PhysicalTherapyApp.Models.AppointmentStatus.Confirmed)
+                                    {
+                                        <span class="badge badge-confirmed">Confirmada</span>
+                                    }
+                                    else if (appointment.Status == PhysicalTherapyApp.Models.AppointmentStatus.Completed)
+                                    {
+                                        <span class="badge badge-completed">Completada</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-cancelled">Cancelada</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

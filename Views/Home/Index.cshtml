@@ -1,0 +1,85 @@
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<div class="container">
+    <div class="hero fade-in">
+        <h1>🏥 Bienvenido a Terapia Física</h1>
+        <p>Servicios profesionales de rehabilitación y terapia física para tu bienestar</p>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <a asp-controller="Appointments" asp-action="Create" class="btn btn-primary" style="margin-right: 1rem;">Agendar Cita</a>
+            <a asp-controller="Appointments" asp-action="Index" class="btn btn-outline">Ver Mis Citas</a>
+        }
+        else
+        {
+            <a asp-controller="Account" asp-action="Register" class="btn btn-primary" style="margin-right: 1rem;">Comenzar Ahora</a>
+            <a asp-controller="Account" asp-action="Login" class="btn btn-outline">Iniciar Sesión</a>
+        }
+    </div>
+
+    <div class="card fade-in">
+        <div class="card-header">
+            ¿Por qué elegirnos?
+        </div>
+        <div class="card-body">
+            <div class="grid grid-3">
+                <div class="service-card">
+                    <h3>👨‍⚕️ Profesionales Certificados</h3>
+                    <p>Nuestros terapeutas están altamente capacitados y certificados con años de experiencia.</p>
+                </div>
+                <div class="service-card">
+                    <h3>📅 Horarios Flexibles</h3>
+                    <p>Agenda tus citas en el horario que mejor se adapte a tu rutina diaria.</p>
+                </div>
+                <div class="service-card">
+                    <h3>💳 Pagos Seguros</h3>
+                    <p>Sistema de pagos en línea seguro y confiable para tu tranquilidad.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card fade-in">
+        <div class="card-header">
+            Nuestros Servicios
+        </div>
+        <div class="card-body">
+            <div class="grid grid-2">
+                <div class="service-card">
+                    <h3>Terapia de Rehabilitación</h3>
+                    <p>Sesión personalizada para recuperación de lesiones</p>
+                    <div class="price">$50.00</div>
+                    <p><strong>Duración:</strong> 60 minutos</p>
+                </div>
+                <div class="service-card">
+                    <h3>Masaje Terapéutico</h3>
+                    <p>Alivio de dolor muscular y tensión</p>
+                    <div class="price">$40.00</div>
+                    <p><strong>Duración:</strong> 45 minutos</p>
+                </div>
+                <div class="service-card">
+                    <h3>Terapia Deportiva</h3>
+                    <p>Tratamiento especializado para atletas</p>
+                    <div class="price">$60.00</div>
+                    <p><strong>Duración:</strong> 60 minutos</p>
+                </div>
+                <div class="service-card">
+                    <h3>Electroterapia</h3>
+                    <p>Tratamiento con corrientes eléctricas</p>
+                    <div class="price">$35.00</div>
+                    <p><strong>Duración:</strong> 30 minutos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!User.Identity?.IsAuthenticated == true)
+    {
+        <div class="card fade-in" style="text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h2>¿Listo para comenzar?</h2>
+            <p style="font-size: 1.1rem; margin: 1rem 0 2rem 0;">Regístrate ahora y agenda tu primera cita</p>
+            <a asp-controller="Account" asp-action="Register" class="btn btn-primary" style="background: white; color: #667eea;">Crear Cuenta</a>
+        </div>
+    }
+</div>
