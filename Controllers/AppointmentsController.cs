@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PhysicalTherapyApp.Data;
 using PhysicalTherapyApp.Models;
@@ -10,8 +9,10 @@ using PhysicalTherapyApp.ViewModels;
 
 namespace PhysicalTherapyApp.Controllers
 {
+    [Route("api/[controller]")]
+    [ApiController]
     [Authorize]
-    public class AppointmentsController : Controller
+    public class AppointmentsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly IAppointmentService _appointmentService;
@@ -27,11 +28,12 @@ namespace PhysicalTherapyApp.Controllers
             _userManager = userManager;
         }
 
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
-                return RedirectToAction("Login", "Account");
+                return Unauthorized();
 
             IEnumerable<Appointment> appointments;
 
@@ -52,7 +54,6 @@ namespace PhysicalTherapyApp.Controllers
                 var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
                 if (patient == null)
                 {
-                    // Create patient record if doesn't exist
                     patient = new Patient
                     {
                         UserId = user.Id,
@@ -66,20 +67,48 @@ namespace PhysicalTherapyApp.Controllers
                 appointments = await _appointmentService.GetAppointmentsByPatientIdAsync(patient.Id);
             }
 
-            return View(appointments);
+            var result = appointments.Select(a => new {
+                a.Id,
+                a.AppointmentDate,
+                a.Status,
+                PatientName = a.Patient.User.FullName,
+                TherapistName = a.Therapist.User.FullName,
+                ServiceName = a.Service.Name,
+                a.Service.Price
+            });
+
+            return Ok(result);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Create()
+        [HttpGet("form-data")]
+        public async Task<IActionResult> GetFormData()
         {
+            var therapists = await _context.Therapists
+                .Include(t => t.User)
+                .Where(t => t.IsAvailable)
+                .Select(t => new { t.Id, Name = t.User.FullName })
+                .ToListAsync();
+
+            var services = await _context.Services
+                .Where(s => s.IsActive)
+                .Select(s => new { s.Id, s.Name, s.DurationMinutes, s.Price })
+                .ToListAsync();
+
+            return Ok(new { therapists, services });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateAppointmentViewModel model)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
             var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-                return RedirectToAction("Login", "Account");
+            if (user == null) return Unauthorized();
 
             var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
+
             if (patient == null)
             {
-                // Create patient record if doesn't exist
                 patient = new Patient
                 {
                     UserId = user.Id,
@@ -90,106 +119,41 @@ namespace PhysicalTherapyApp.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            ViewBag.Therapists = new SelectList(
-                await _context.Therapists
-                    .Include(t => t.User)
-                    .Where(t => t.IsAvailable)
-                    .ToListAsync(),
-                "Id",
-                "User.FullName"
-            );
+            var service = await _context.Services.FindAsync(model.ServiceId);
+            if (service == null) return NotFound();
 
-            ViewBag.Services = new SelectList(
-                await _context.Services.Where(s => s.IsActive).ToListAsync(),
-                "Id",
-                "Name"
-            );
-
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateAppointmentViewModel model)
-        {
-            if (ModelState.IsValid)
+            var appointment = new Appointment
             {
-                var user = await _userManager.GetUserAsync(User);
-                var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user!.Id);
+                PatientId = patient.Id,
+                TherapistId = model.TherapistId,
+                ServiceId = model.ServiceId,
+                AppointmentDate = model.AppointmentDate,
+                DurationMinutes = service.DurationMinutes,
+                Notes = model.Notes,
+                Status = AppointmentStatus.Pending,
+                CreatedAt = DateTime.UtcNow
+            };
 
-                if (patient == null)
-                    return NotFound();
+            var success = await _appointmentService.CreateAppointmentAsync(appointment);
 
-                var service = await _context.Services.FindAsync(model.ServiceId);
-                if (service == null)
-                    return NotFound();
-
-                var appointment = new Appointment
-                {
-                    PatientId = patient.Id,
-                    TherapistId = model.TherapistId,
-                    ServiceId = model.ServiceId,
-                    AppointmentDate = model.AppointmentDate,
-                    DurationMinutes = service.DurationMinutes,
-                    Notes = model.Notes,
-                    Status = AppointmentStatus.Pending,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                var success = await _appointmentService.CreateAppointmentAsync(appointment);
-
-                if (success)
-                {
-                    TempData["Success"] = "Cita creada exitosamente";
-                    return RedirectToAction(nameof(Index));
-                }
-                else
-                {
-                    ModelState.AddModelError("", "El horario seleccionado no está disponible");
-                }
-            }
-
-            ViewBag.Therapists = new SelectList(
-                await _context.Therapists
-                    .Include(t => t.User)
-                    .Where(t => t.IsAvailable)
-                    .ToListAsync(),
-                "Id",
-                "User.FullName"
-            );
-
-            ViewBag.Services = new SelectList(
-                await _context.Services.Where(s => s.IsActive).ToListAsync(),
-                "Id",
-                "Name"
-            );
-
-            return View(model);
+            if (success) return Ok(appointment);
+            
+            return BadRequest(new { message = "El horario seleccionado no está disponible" });
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost("{id}/cancel")]
         public async Task<IActionResult> Cancel(int id)
         {
             var success = await _appointmentService.CancelAppointmentAsync(id);
-            
-            if (success)
-            {
-                TempData["Success"] = "Cita cancelada exitosamente";
-            }
-            else
-            {
-                TempData["Error"] = "No se pudo cancelar la cita";
-            }
-
-            return RedirectToAction(nameof(Index));
+            if (success) return Ok();
+            return BadRequest(new { message = "No se pudo cancelar la cita" });
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAvailableSlots(int therapistId, DateTime date, int durationMinutes)
+        [HttpGet("available-slots")]
+        public async Task<IActionResult> GetAvailableSlots([FromQuery] int therapistId, [FromQuery] DateTime date, [FromQuery] int durationMinutes)
         {
             var slots = await _appointmentService.GetAvailableTimeSlotsAsync(therapistId, date, durationMinutes);
-            return Json(slots.Select(s => new { time = s.ToString("HH:mm"), value = s.ToString("o") }));
+            return Ok(slots.Select(s => new { time = s.ToString("HH:mm"), value = s.ToString("o") }));
         }
     }
 }

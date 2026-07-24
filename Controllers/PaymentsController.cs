@@ -9,8 +9,10 @@ using PhysicalTherapyApp.ViewModels;
 
 namespace PhysicalTherapyApp.Controllers
 {
+    [Route("api/[controller]")]
+    [ApiController]
     [Authorize]
-    public class PaymentsController : Controller
+    public class PaymentsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly IPaymentService _paymentService;
@@ -26,15 +28,26 @@ namespace PhysicalTherapyApp.Controllers
             _userManager = userManager;
         }
 
+        [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index()
         {
             var payments = await _paymentService.GetAllPaymentsAsync();
-            return View(payments);
+            var result = payments.Select(p => new {
+                p.Id,
+                p.Amount,
+                p.PaymentDate,
+                p.PaymentMethod,
+                p.Status,
+                p.TransactionId,
+                PatientName = p.Appointment.Patient.User.FullName,
+                ServiceName = p.Appointment.Service.Name
+            });
+            return Ok(result);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Process(int appointmentId)
+        [HttpGet("appointment/{appointmentId}")]
+        public async Task<IActionResult> GetPaymentDetails(int appointmentId)
         {
             var appointment = await _context.Appointments
                 .Include(a => a.Service)
@@ -47,29 +60,24 @@ namespace PhysicalTherapyApp.Controllers
             if (appointment == null)
                 return NotFound();
 
-            // Check if already paid
             var existingPayment = await _paymentService.GetPaymentByAppointmentIdAsync(appointmentId);
             if (existingPayment != null && existingPayment.Status == PaymentStatus.Completed)
             {
-                TempData["Info"] = "Esta cita ya ha sido pagada";
-                return RedirectToAction("Index", "Appointments");
+                return BadRequest(new { message = "Esta cita ya ha sido pagada" });
             }
 
-            var model = new ProcessPaymentViewModel
+            return Ok(new
             {
-                AppointmentId = appointment.Id,
-                Amount = appointment.Service.Price,
-                ServiceName = appointment.Service.Name,
-                TherapistName = appointment.Therapist.User.FullName,
-                AppointmentDate = appointment.AppointmentDate
-            };
-
-            return View(model);
+                appointmentId = appointment.Id,
+                amount = appointment.Service.Price,
+                serviceName = appointment.Service.Name,
+                therapistName = appointment.Therapist.User.FullName,
+                appointmentDate = appointment.AppointmentDate
+            });
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Process(ProcessPaymentViewModel model)
+        [HttpPost("process")]
+        public async Task<IActionResult> Process([FromBody] ProcessPaymentViewModel model)
         {
             if (ModelState.IsValid)
             {
@@ -86,16 +94,13 @@ namespace PhysicalTherapyApp.Controllers
 
                 if (success)
                 {
-                    TempData["Success"] = $"Pago procesado exitosamente. ID de transacción: {payment.TransactionId}";
-                    return RedirectToAction("Index", "Appointments");
+                    return Ok(new { message = "Pago procesado exitosamente", transactionId = payment.TransactionId });
                 }
-                else
-                {
-                    TempData["Error"] = "El pago falló. Por favor, intente nuevamente.";
-                }
+                
+                return BadRequest(new { message = "El pago falló. Por favor, intente nuevamente." });
             }
 
-            return View(model);
+            return BadRequest(ModelState);
         }
     }
 }
