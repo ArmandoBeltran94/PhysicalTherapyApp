@@ -1,0 +1,21 @@
+{
+  "name": "physicaltherapyapp",
+  "version": "1.0.0",
+  "description": "Sistema completo de gestión de terapia física desarrollado con ASP.NET Core (.NET 8), Entity Framework Core, y SQL Server.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArmandoBeltran94/PhysicalTherapyApp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ArmandoBeltran94/PhysicalTherapyApp/issues"
+  },
+  "homepage": "https://github.com/ArmandoBeltran94/PhysicalTherapyApp#readme"
+}
