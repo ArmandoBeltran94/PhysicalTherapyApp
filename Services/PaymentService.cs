@@ -57,6 +57,7 @@ namespace PhysicalTherapyApp.Services
                     payment.Status = PaymentStatus.Completed;
                     payment.TransactionId = $"TXN-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}";
                     payment.PaymentDate = DateTime.UtcNow;
+                    payment.Appointment.IsPaid = true;
                 }
                 else
                 {

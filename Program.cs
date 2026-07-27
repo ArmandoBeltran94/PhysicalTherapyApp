@@ -71,7 +71,11 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 var app = builder.Build();
 
@@ -103,6 +107,26 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         // Use EnsureCreated to automatically create database schema
         context.Database.EnsureCreated();
+
+        // Create AppointmentRequests table manually if EF Migrations conflict
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS ""AppointmentRequests"" (
+                    ""Id"" INTEGER NOT NULL CONSTRAINT ""PK_AppointmentRequests"" PRIMARY KEY AUTOINCREMENT,
+                    ""PatientName"" TEXT NOT NULL,
+                    ""PhoneNumber"" TEXT NOT NULL,
+                    ""Notes"" TEXT NULL,
+                    ""Status"" TEXT NOT NULL,
+                    ""CreatedAt"" TEXT NOT NULL
+                );
+            ");
+        }
+        catch (Exception ex)
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning(ex, "Table AppointmentRequests might already exist or couldn't be created manually.");
+        }
     }
     catch (Exception ex)
     {

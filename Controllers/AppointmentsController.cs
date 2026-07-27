@@ -71,6 +71,7 @@ namespace PhysicalTherapyApp.Controllers
                 a.Id,
                 a.AppointmentDate,
                 a.Status,
+                a.IsPaid,
                 PatientName = a.Patient.User.FullName,
                 TherapistName = a.Therapist.User.FullName,
                 ServiceName = a.Service.Name,

@@ -17,6 +17,7 @@ namespace PhysicalTherapyApp.Data
         public DbSet<Service> Services { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Payment> Payments { get; set; }
+        public DbSet<AppointmentRequest> AppointmentRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

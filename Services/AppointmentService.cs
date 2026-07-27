@@ -138,18 +138,39 @@ namespace PhysicalTherapyApp.Services
             var availableSlots = new List<DateTime>();
             var startHour = 8; // 8 AM
             var endHour = 18; // 6 PM
-
             var dateOnly = date.Date;
+            var nextDate = dateOnly.AddDays(1);
+
+            // Cargar citas del día en memoria para evitar problemas de traducción de SQLite con AddMinutes
+            var dailyAppointments = await _context.Appointments
+                .Where(a => a.TherapistId == therapistId
+                    && a.Status != AppointmentStatus.Cancelled
+                    && a.AppointmentDate >= dateOnly
+                    && a.AppointmentDate < nextDate)
+                .ToListAsync();
 
             for (int hour = startHour; hour < endHour; hour++)
             {
                 for (int minute = 0; minute < 60; minute += 30)
                 {
-                    var slotTime = dateOnly.AddHours(hour).AddMinutes(minute);
-                    
-                    if (await IsTimeSlotAvailableAsync(therapistId, slotTime, durationMinutes))
+                    var slotStart = dateOnly.AddHours(hour).AddMinutes(minute);
+                    var slotEnd = slotStart.AddMinutes(durationMinutes);
+
+                    var hasConflict = dailyAppointments.Any(a =>
                     {
-                        availableSlots.Add(slotTime);
+                        var aStart = a.AppointmentDate;
+                        var aEnd = a.AppointmentDate.AddMinutes(a.DurationMinutes);
+                        return aStart < slotEnd && aEnd > slotStart;
+                    });
+
+                    // Si la fecha es de hoy, asegurar que el horario sea en el futuro
+                    if (!hasConflict && slotStart > DateTime.Now)
+                    {
+                        availableSlots.Add(slotStart);
+                    }
+                    else if (!hasConflict && dateOnly > DateTime.Now.Date)
+                    {
+                        availableSlots.Add(slotStart);
                     }
                 }
             }
@@ -160,15 +181,25 @@ namespace PhysicalTherapyApp.Services
         public async Task<bool> IsTimeSlotAvailableAsync(int therapistId, DateTime appointmentDate, int durationMinutes, int? excludeAppointmentId = null)
         {
             var appointmentEnd = appointmentDate.AddMinutes(durationMinutes);
+            var dateOnly = appointmentDate.Date;
+            var nextDate = dateOnly.AddDays(1);
 
-            var conflictingAppointments = await _context.Appointments
+            var dailyAppointments = await _context.Appointments
                 .Where(a => a.TherapistId == therapistId
                     && a.Status != AppointmentStatus.Cancelled
                     && (excludeAppointmentId == null || a.Id != excludeAppointmentId)
-                    && ((a.AppointmentDate < appointmentEnd && a.AppointmentDate.AddMinutes(a.DurationMinutes) > appointmentDate)))
-                .AnyAsync();
+                    && a.AppointmentDate >= dateOnly
+                    && a.AppointmentDate < nextDate)
+                .ToListAsync();
 
-            return !conflictingAppointments;
+            var hasConflict = dailyAppointments.Any(a =>
+            {
+                var aStart = a.AppointmentDate;
+                var aEnd = a.AppointmentDate.AddMinutes(a.DurationMinutes);
+                return aStart < appointmentEnd && aEnd > appointmentDate;
+            });
+
+            return !hasConflict;
         }
     }
 }

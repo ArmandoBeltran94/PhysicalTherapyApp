@@ -41,7 +41,8 @@ namespace PhysicalTherapyApp.Controllers
                 p.Status,
                 p.TransactionId,
                 PatientName = p.Appointment.Patient.User.FullName,
-                ServiceName = p.Appointment.Service.Name
+                ServiceName = p.Appointment.Service.Name,
+                IsPaid = p.Appointment.IsPaid
             });
             return Ok(result);
         }
@@ -72,7 +73,8 @@ namespace PhysicalTherapyApp.Controllers
                 amount = appointment.Service.Price,
                 serviceName = appointment.Service.Name,
                 therapistName = appointment.Therapist.User.FullName,
-                appointmentDate = appointment.AppointmentDate
+                appointmentDate = appointment.AppointmentDate,
+                isPaid = appointment.IsPaid
             });
         }
 
@@ -87,7 +89,8 @@ namespace PhysicalTherapyApp.Controllers
                     Amount = model.Amount,
                     PaymentMethod = model.PaymentMethod,
                     Status = PaymentStatus.Pending,
-                    PaymentDate = DateTime.UtcNow
+                    PaymentDate = DateTime.UtcNow,
+                    Appointment = await _context.Appointments.FindAsync(model.AppointmentId)
                 };
 
                 var success = await _paymentService.ProcessPaymentAsync(payment);

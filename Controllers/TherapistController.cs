@@ -33,6 +33,7 @@ namespace PhysicalTherapyApp.Controllers
             var appointments = await _context.Appointments
                 .Include(a => a.Patient).ThenInclude(p => p.User)
                 .Include(a => a.Service)
+                .Include(a => a.Payment)
                 .Where(a => a.TherapistId == therapist.Id)
                 .OrderBy(a => a.AppointmentDate)
                 .Select(a => new {
@@ -41,6 +42,7 @@ namespace PhysicalTherapyApp.Controllers
                     PatientName = a.Patient.User.FullName,
                     ServiceName = a.Service.Name,
                     a.Status,
+                    a.IsPaid,
                     a.Notes
                 })
                 .ToListAsync();

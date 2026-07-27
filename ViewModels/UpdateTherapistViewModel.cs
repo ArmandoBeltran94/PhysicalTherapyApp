@@ -7,6 +7,8 @@ namespace PhysicalTherapyApp.ViewModels
         [Required]
         public string FullName { get; set; } = string.Empty;
 
+        public string? PhoneNumber { get; set; }
+
         [Required]
         public string Specialization { get; set; } = string.Empty;
 

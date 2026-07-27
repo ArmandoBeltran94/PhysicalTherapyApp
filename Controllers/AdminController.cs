@@ -48,6 +48,7 @@ namespace PhysicalTherapyApp.Controllers
                 .Include(a => a.Patient).ThenInclude(p => p.User)
                 .Include(a => a.Therapist).ThenInclude(t => t.User)
                 .Include(a => a.Service)
+                .Include(a => a.Payment)
                 .OrderByDescending(a => a.CreatedAt)
                 .Take(10)
                 .Select(a => new {
@@ -56,7 +57,8 @@ namespace PhysicalTherapyApp.Controllers
                     PatientName = a.Patient.User.FullName,
                     TherapistName = a.Therapist.User.FullName,
                     ServiceName = a.Service.Name,
-                    a.Status
+                    a.Status,
+                    a.IsPaid
                 })
                 .ToListAsync();
 
@@ -127,7 +129,10 @@ namespace PhysicalTherapyApp.Controllers
                     t.User.Email,
                     t.Specialization,
                     t.LicenseNumber,
-                    t.IsAvailable
+                    t.IsAvailable,
+                    t.YearsOfExperience,
+                    t.Bio,
+                    PhoneNumber = t.User.PhoneNumber
                 })
                 .ToListAsync();
             return Ok(therapists);
@@ -207,6 +212,7 @@ namespace PhysicalTherapyApp.Controllers
             if (therapist.User != null)
             {
                 therapist.User.FullName = model.FullName;
+                therapist.User.PhoneNumber = model.PhoneNumber;
             }
 
             await _context.SaveChangesAsync();

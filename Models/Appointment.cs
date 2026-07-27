@@ -34,5 +34,6 @@ namespace PhysicalTherapyApp.Models
         public Therapist Therapist { get; set; } = null!;
         public Service Service { get; set; } = null!;
         public Payment? Payment { get; set; }
+        public bool IsPaid { get; set; } = false;
     }
 }
