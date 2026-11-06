@@ -1,4 +1,5 @@
 using System.Text;
+using Amazon.Lambda.AspNetCoreServer.Hosting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -9,12 +10,28 @@ using PhysicalTherapyApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Enable AWS Lambda hosting (works seamlessly in Lambda; automatically falls back to Kestrel locally)
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
+
+// Database configuration: Supports PostgreSQL (for AWS Lambda / Cloud) and SQLite (local dev)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
+var dbProvider = builder.Configuration.GetValue<string>("DatabaseProvider") ?? 
+    (connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase) || 
+     connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) ? "PostgreSQL" : "SQLite");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
+{
+    if (dbProvider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseNpgsql(connectionString);
+    }
+    else
+    {
+        options.UseSqlite(connectionString);
+    }
+});
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -56,12 +73,15 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Configure CORS
+// Configure CORS (configurable for CloudFront/custom domain in AWS, defaults to localhost)
+var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
+    ?? new[] { "http://localhost:5173", "http://localhost:5174" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:5174")
+        policy.WithOrigins(configuredOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -108,24 +128,27 @@ using (var scope = app.Services.CreateScope())
         // Use EnsureCreated to automatically create database schema
         context.Database.EnsureCreated();
 
-        // Create AppointmentRequests table manually if EF Migrations conflict
-        try
+        // Create AppointmentRequests table manually only if SQLite is used
+        if (context.Database.IsSqlite())
         {
-            context.Database.ExecuteSqlRaw(@"
-                CREATE TABLE IF NOT EXISTS ""AppointmentRequests"" (
-                    ""Id"" INTEGER NOT NULL CONSTRAINT ""PK_AppointmentRequests"" PRIMARY KEY AUTOINCREMENT,
-                    ""PatientName"" TEXT NOT NULL,
-                    ""PhoneNumber"" TEXT NOT NULL,
-                    ""Notes"" TEXT NULL,
-                    ""Status"" TEXT NOT NULL,
-                    ""CreatedAt"" TEXT NOT NULL
-                );
-            ");
-        }
-        catch (Exception ex)
-        {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogWarning(ex, "Table AppointmentRequests might already exist or couldn't be created manually.");
+            try
+            {
+                context.Database.ExecuteSqlRaw(@"
+                    CREATE TABLE IF NOT EXISTS ""AppointmentRequests"" (
+                        ""Id"" INTEGER NOT NULL CONSTRAINT ""PK_AppointmentRequests"" PRIMARY KEY AUTOINCREMENT,
+                        ""PatientName"" TEXT NOT NULL,
+                        ""PhoneNumber"" TEXT NOT NULL,
+                        ""Notes"" TEXT NULL,
+                        ""Status"" TEXT NOT NULL,
+                        ""CreatedAt"" TEXT NOT NULL
+                    );
+                ");
+            }
+            catch (Exception ex)
+            {
+                var logger = services.GetRequiredService<ILogger<Program>>();
+                logger.LogWarning(ex, "Table AppointmentRequests might already exist or couldn't be created manually.");
+            }
         }
     }
     catch (Exception ex)
